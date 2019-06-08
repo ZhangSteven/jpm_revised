@@ -130,6 +130,22 @@ def readHolding(lines):
 
 
 
+def readCash(lines):
+    """
+    [List] lines => [Iterable] cash entries
+
+    Where the lines of a cash section looks like
+
+    header line
+    cash entry 1
+    cash entry 2
+    """
+    headers = pop(lines)
+    return map(partial(toDictionary, headers)
+              , filterfalse(emptyLine, lines))
+
+
+
 def readHeaders(lines):
     """
     [List] lines => [List] headers
@@ -149,9 +165,14 @@ def readPosition(headers, lines):
     """
     [List] headers, [List] lines => [Dictionary] position
     """
-    allItems = reduce(add, filterfalse(emptyLine, lines), [])
+    return toDictionary(headers
+                       , reduce(add, filterfalse(emptyLine, lines), []))
+
+
+
+def toDictionary(headers, values):
     emptyHeader = lambda pair: emptyString(pair[0])
-    return dict(filterfalse(emptyHeader, zip(headers, allItems)))
+    return dict(filterfalse(emptyHeader, zip(headers, values)))
 
 
 
@@ -187,6 +208,8 @@ if __name__ == '__main__':
     inputFile = join(getCurrentDirectory(), 'samples', 'statement01.xls')
 
     lines = worksheetToLines(open_workbook(inputFile).sheet_by_index(0))
-    for x in readHolding(islice(lines, 8, 22)):
-        print(x)
+    # for x in readHolding(islice(lines, 8, 22)):
+    #     print(x)
 
+    for x in readCash(islice(lines, 194, 201)):
+        print(x)
