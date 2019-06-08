@@ -5,7 +5,7 @@
 #
 from tester.file import itemGroup
 from jpm_revised.utility import getCurrentDirectory
-from utils.iter import head
+from utils.iter import pop
 from utils.excel import worksheetToLines
 from xlrd import open_workbook
 from operator import add
@@ -34,7 +34,7 @@ def readJPM(lines):
     accountLine = lambda L: True if len(L) > 0 and str(L[0]).startswith('Account:') \
                             else False
     sections = itemGroup(accountLine, lines)
-    dateString = readDateFromHeader(head(sections))   # consume the first section
+    dateString = readDateFromHeader(pop(sections))   # consume the first section
     return dateString
 
 
@@ -59,7 +59,7 @@ def readDateFromHeader(lines):
         return temp_list[2] + '-' + month + '-' + temp_list[0]
 
 
-    return extractDateString(head(filter(dateLine, lines))[0])
+    return extractDateString(pop(filter(dateLine, lines))[0])
 
 
 
@@ -95,8 +95,8 @@ def account(lines):
 
     sections = itemGroup(cashSection, lines[1:])    # consists of two sections
     return (readAccountCode(lines[0][0]) \
-           , readHoldings(head(sections)) \
-           , readCash(head(sections)))  
+           , readHoldings(pop(sections)) \
+           , readCash(pop(sections)))
 
 
 
@@ -125,7 +125,7 @@ def readHolding(lines):
     holding 2
     """
     sections = itemGroup(emptyLine, lines)
-    headers = readHeaders(head(sections))   # first section is the header
+    headers = readHeaders(pop(sections))   # first section is the header
     return map(partial(readPosition, headers), sections)
 
 
