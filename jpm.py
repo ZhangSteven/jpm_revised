@@ -10,7 +10,7 @@ from utils.excel import worksheetToLines
 from xlrd import open_workbook
 from operator import add
 from functools import reduce
-from itertools import filterfalse, islice
+from itertools import filterfalse, islice, chain
 from functools import partial
 
 
@@ -93,10 +93,9 @@ def account(lines):
     cashSection = lambda L: True if len(L) > 0 and L[0] == 'Branch Code' \
                                 else False
 
-    sections = itemGroup(cashSection, lines[1:])    # consists of two sections
-    return (readAccountCode(lines[0][0]) \
-           , readHoldings(pop(sections)) \
-           , readCash(pop(sections)))
+    sections = itemGroup(cashSection, lines[1:])
+    return (readAccountCode(lines[0][0])
+           , chain(readPosition(pop(sections)), readPosition(pop(sections))))
 
 
 
@@ -114,35 +113,27 @@ def readAccountCode(accountString):
 
 
 
-def readHolding(lines):
+def readPosition(lines):
     """
     [List] lines => [Iterable] holdings
 
-    Where the lines of a holding section looks like:
+    Where a holding is a dictionary object representing a position.
 
-    header lines
-    holding 1
-    holding 2
+    The lines could be a holding section or a cash section.
+
+    header line(s)
+    <empty line>
+    lines for position 1
+    <empty line>
+    lines for position 2
     """
+    if lines == None:
+        return []
+
     sections = itemGroup(emptyLine, lines)
     headers = readHeaders(pop(sections))   # first section is the header
-    return map(partial(readPosition, headers), sections)
-
-
-
-def readCash(lines):
-    """
-    [List] lines => [Iterable] cash entries
-
-    Where the lines of a cash section looks like
-
-    header line
-    cash entry 1
-    cash entry 2
-    """
-    headers = pop(lines)
-    return map(partial(toDictionary, headers)
-              , filterfalse(emptyLine, lines))
+    emptyHeader = lambda pair: emptyString(pair[0])
+    return map(partial(position, headers), sections)
 
 
 
@@ -150,20 +141,25 @@ def readHeaders(lines):
     """
     [List] lines => [List] headers
 
-    The headers span across multiple lines, like
+    The headers can span across multiple lines, like in a holdings section:
 
     Security ID Security Name           Location/Nominee    Awaiting Receipt ...                Reg./Sub Acct.  Awaiting Delivery   Current Face-Settled    Current Face-Total
     ISIN ... Coupon Rate Maturity Date   Pool Number Country Collateral Units        
     Borrowed Units      
 
+    Or it can be just one line, like in a cash section:
+
+    Branch Code Branch Name         Cash Account    Cash Account Name
     """
-    return reduce(add, lines, [])   # simply concatenate all the lines together
+    return reduce(add, lines, [])   # simply concatenate values in all the lines
 
 
 
-def readPosition(headers, lines):
+def position(headers, lines):
     """
     [List] headers, [List] lines => [Dictionary] position
+
+    line: a list of values
     """
     return toDictionary(headers
                        , reduce(add, filterfalse(emptyLine, lines), []))
@@ -208,8 +204,13 @@ if __name__ == '__main__':
     inputFile = join(getCurrentDirectory(), 'samples', 'statement01.xls')
 
     lines = worksheetToLines(open_workbook(inputFile).sheet_by_index(0))
-    # for x in readHolding(islice(lines, 8, 22)):
+    # for x in readPosition(islice(lines, 8, 22)):
     #     print(x)
 
-    for x in readCash(islice(lines, 194, 201)):
+    # for x in readPosition(islice(lines, 194, 201)):
+    #     print(x)
+
+    accountCode, positions = account(list(islice(lines, 7, 201)))
+    print(accountCode)
+    for x in positions:
         print(x)
