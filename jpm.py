@@ -5,7 +5,7 @@
 #
 
 from jpm_revised.utility import getCurrentDirectory
-from utils.iter import pop, itemGroup, firstOf
+from utils.iter import pop, itemGroup, firstOf, divide
 from utils.excel import worksheetToLines
 from investment_lookup.id_lookup import get_investment_Ids, \
                                         lookup_investment_currency
@@ -23,7 +23,8 @@ emptyLine = lambda line: all(emptyString(x) for x in line)
 
 def readJPM(lines):
     """
-    [Iterable] lines => [Tuple] (date, [Iterable] Accounts)
+    [Iterable] lines => [Tuple] ([List] holding positions
+                                , [List] cash positions)
 
     From the lines of the JPM statement file, read out its date and a list of
     accounts.
@@ -41,10 +42,14 @@ def readJPM(lines):
                             else False
     sections = itemGroup(accountLine, lines)
     dateString = dateFromHeader(pop(sections))   # consume the first section
-    return reduce(chain     # concatenate all positions (holding or cash)
-                 , map(partial(genevaPosition, dateString)
-                      , map(account, sections))
-                 , [])
+
+    isGenevaHolding = lambda x: 'name' in x
+
+    return divide(isGenevaHolding
+                 , reduce(chain     # concatenate all positions (holding or cash)
+                         , map(partial(genevaPosition, dateString)
+                              , map(account, sections))
+                         , []))
 
 
 

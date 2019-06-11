@@ -6,7 +6,7 @@ from functools import partial
 from itertools import islice, filterfalse
 from xlrd import open_workbook
 from utils.excel import worksheetToLines
-from jpm_revised.jpm import account, genevaPosition
+from jpm_revised.jpm import account, genevaPosition, readJPM
 from jpm_revised.utility import getCurrentDirectory
 from os.path import join
 
@@ -54,6 +54,13 @@ class TestJPM(unittest2.TestCase):
         self.assertEqual(39, len(positions))
         self.verifyGenevaHolding1(positions[0], dateString)
         self.verifyGenevaCash1(positions[38], dateString)
+
+
+
+    def testReadJPM(self):
+        inputFile = join(getCurrentDirectory(), 'samples', 'statement01.xls')
+        (holdings, cashEntries) = readJPM(worksheetToLines(open_workbook(inputFile).sheet_by_index(0)))
+        self.assertEqual(len(holdings), 52)
 
 
 
