@@ -7,10 +7,11 @@
 from jpm_revised.utility import getCurrentDirectory
 from utils.iter import pop, itemGroup, firstOf, divide
 from utils.excel import worksheetToLines
+from utils.utility import writeCsv
 from investment_lookup.id_lookup import get_investment_Ids, \
                                         lookup_investment_currency
 from xlrd import open_workbook
-from operator import add
+from operator import add, getitem
 from functools import reduce, partial
 from itertools import filterfalse, islice, chain
 
@@ -23,7 +24,8 @@ emptyLine = lambda line: all(emptyString(x) for x in line)
 
 def readJPM(lines):
     """
-    [Iterable] lines => [Tuple] ([List] holding positions
+    [Iterable] lines => [Tuple] ([String] date
+    							, [List] holding positions
                                 , [List] cash positions)
 
     From the lines of the JPM statement file, read out its date and a list of
@@ -45,11 +47,14 @@ def readJPM(lines):
 
     isGenevaHolding = lambda x: 'name' in x
 
-    return divide(isGenevaHolding
+    (holdings, cashEntries) = \
+           divide(isGenevaHolding
                  , reduce(chain     # concatenate all positions (holding or cash)
                          , map(partial(genevaPosition, dateString)
                               , map(account, sections))
                          , []))
+
+    return (dateString, holdings, cashEntries)
 
 
 
@@ -344,6 +349,47 @@ def getPortId(accountCode):
 
 
 
+def getOutputFilename(dateString, prefix, outputDir):
+    """
+    [FIXME]: trial version only
+    """
+    return ('output_' + dateString + '_holding.csv'
+           , 'output_' + dateString + '_cash.csv')
+
+
+
+def toCsv(inputFile, outputDir, prefix):
+    """
+    [String] intputFile, [String] outputDir, [String] prefix =>
+        [String] outputFile
+
+    Side effect: create an output csv file
+    """
+    dictToValues = lambda keys, d: map(partial(getitem, d), keys)
+
+    (dateString, holdings, cashEntries) = \
+            readJPM(worksheetToLines(open_workbook(inputFile).sheet_by_index(0)))
+
+    (holdingFile, cashFile) = getOutputFilename(dateString, prefix, outputDir)
+
+    headers = [ 'portfolio', 'custodian', 'date', 'geneva_investment_id'
+              , 'ISIN', 'bloomberg_figi', 'name', 'currency', 'quantity']
+    writeCsv(holdingFile
+            , chain([headers]
+                   , map(partial(dictToValues, headers), holdings))
+            , '|')
+
+    headers = [ 'portfolio', 'custodian', 'date', 'currency', 'balance']
+    writeCsv(cashFile
+            , chain([headers]
+                   , map(partial(dictToValues, headers), cashEntries))
+            , '|')
+
+    return [holdingFile, cashFile]
+
+
+
+
 if __name__ == '__main__':
     from os.path import join
     inputFile = join(getCurrentDirectory(), 'samples', 'statement01.xls')
@@ -357,5 +403,7 @@ if __name__ == '__main__':
     # for x in genevaPosition('2016-06-07', account(list(islice(lines, 7, 201)))):
     #     print(x)
 
-    for x in readJPM(lines):
-        print(x)
+    # for x in readJPM(lines):
+    #     print(x)
+
+    print(toCsv(inputFile, '', ''))

@@ -59,11 +59,13 @@ class TestJPM(unittest2.TestCase):
 
     def testReadJPM(self):
         inputFile = join(getCurrentDirectory(), 'samples', 'statement01.xls')
-        (holdings, cashEntries) = readJPM(worksheetToLines(open_workbook(inputFile).sheet_by_index(0)))
+        (dateString, holdings, cashEntries) = \
+            readJPM(worksheetToLines(open_workbook(inputFile).sheet_by_index(0)))
         self.assertEqual(len(holdings), 52)
         self.assertEqual(len(cashEntries), 10)
-        self.verifyGenevaHolding2(holdings[51])
-        self.verifyGenevaCash2(cashEntries[9])
+        self.assertEqual('2016-07-06', dateString)
+        self.verifyGenevaHolding2(holdings[51], dateString)
+        self.verifyGenevaCash2(cashEntries[9], dateString)
 
 
 
@@ -108,11 +110,11 @@ class TestJPM(unittest2.TestCase):
 
 
 
-    def verifyGenevaHolding2(self, position):
+    def verifyGenevaHolding2(self, position, dateString):
         self.assertEqual(9, len(position))
         self.assertEqual('12856', position['portfolio'])
         self.assertEqual('JPM', position['custodian'])
-        self.assertEqual('2016-07-06', position['date'])
+        self.assertEqual(dateString, position['date'])
         self.assertEqual('HKD', position['currency'])
         self.assertEqual(7683000, position['quantity'])
         self.assertEqual('CHINA LONGYUAN POWER GROUP CORP LTD COMMON STOCK HKD 1', position['name'])
@@ -122,10 +124,10 @@ class TestJPM(unittest2.TestCase):
 
 
 
-    def verifyGenevaCash2(self, position):
+    def verifyGenevaCash2(self, position, dateString):
         self.assertEqual(5, len(position))
         self.assertEqual('12856', position['portfolio'])
         self.assertEqual('JPM', position['custodian'])
-        self.assertEqual('2016-07-06', position['date'])
+        self.assertEqual(dateString, position['date'])
         self.assertEqual('USD', position['currency'])
         self.assertAlmostEqual(906.48, position['balance'])
