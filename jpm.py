@@ -41,7 +41,10 @@ def readJPM(lines):
                             else False
     sections = itemGroup(accountLine, lines)
     dateString = dateFromHeader(pop(sections))   # consume the first section
-    return dateString
+    return reduce(chain
+                 , map(partial(genevaPosition, dateString)
+                      , map(account, sections))
+                 , [])
 
 
 
@@ -346,5 +349,8 @@ if __name__ == '__main__':
     # for x in positions:
     #     print(x)
 
-    for x in genevaPosition('2016-06-07', account(list(islice(lines, 7, 201)))):
+    # for x in genevaPosition('2016-06-07', account(list(islice(lines, 7, 201)))):
+    #     print(x)
+
+    for x in readJPM(lines):
         print(x)
