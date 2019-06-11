@@ -41,7 +41,7 @@ def readJPM(lines):
                             else False
     sections = itemGroup(accountLine, lines)
     dateString = dateFromHeader(pop(sections))   # consume the first section
-    return reduce(chain
+    return reduce(chain     # concatenate all positions (holding or cash)
                  , map(partial(genevaPosition, dateString)
                       , map(account, sections))
                  , [])
