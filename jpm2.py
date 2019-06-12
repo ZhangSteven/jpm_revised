@@ -3,6 +3,8 @@
 # Read holdings and cash data from JPM bank statements and convert them into
 # Geneva format.
 #
+# This is a revised version for the jpm.read_jpm.py implementation.
+#
 
 from jpm_revised.utility import getCurrentDirectory
 from utils.iter import pop, itemGroup, firstOf, divide
@@ -14,7 +16,10 @@ from xlrd import open_workbook
 from operator import add, getitem
 from functools import reduce, partial
 from itertools import filterfalse, islice, chain
+from os.path import join
+import logging
 
+logger = logging.getLogger(__name__)
 
 
 emptyString = lambda x: True if isinstance(x, str) and x.strip() == '' else False
@@ -351,10 +356,12 @@ def getPortId(accountCode):
 
 def getOutputFilename(dateString, prefix, outputDir):
     """
-    [FIXME]: trial version only
+    
     """
-    return ('output_' + dateString + '_holding.csv'
-           , 'output_' + dateString + '_cash.csv')
+    addDir = lambda x: join(outputDir, x)
+
+    return (addDir(prefix + dateString + '_holding.csv')
+           , addDir(prefix + dateString + '_cash.csv'))
 
 
 
@@ -365,6 +372,8 @@ def toCsv(inputFile, outputDir, prefix):
 
     Side effect: create an output csv file
     """
+    logger.info('toCsv(): {0}'.format(inputFile))
+
     dictToValues = lambda keys, d: map(partial(getitem, d), keys)
 
     (dateString, holdings, cashEntries) = \
@@ -391,7 +400,9 @@ def toCsv(inputFile, outputDir, prefix):
 
 
 if __name__ == '__main__':
-    from os.path import join
+    import logging.config
+    logging.config.fileConfig('logging.config', disable_existing_loggers=False)
+
     inputFile = join(getCurrentDirectory(), 'samples', 'statement01.xls')
 
     lines = worksheetToLines(open_workbook(inputFile).sheet_by_index(0))
@@ -406,4 +417,4 @@ if __name__ == '__main__':
     # for x in readJPM(lines):
     #     print(x)
 
-    print(toCsv(inputFile, '', ''))
+    print(toCsv(inputFile, getCurrentDirectory(), 'listco_equity_jpm_'))

@@ -6,7 +6,7 @@ from functools import partial
 from itertools import islice, filterfalse
 from xlrd import open_workbook
 from utils.excel import worksheetToLines
-from jpm_revised.jpm import account, genevaPosition, readJPM
+from jpm_revised.jpm2 import account, genevaPosition, readJPM
 from jpm_revised.utility import getCurrentDirectory
 from os.path import join
 
